@@ -1,8 +1,7 @@
 import pandas as pd
 import numpy as np
-from scipy import stats
-import itertools
 import json
+import pickle
 
 def get_new_cols(incl_cols, ref_cols, sort=True):
     new_cols = [c for c in incl_cols if c in ref_cols]
@@ -19,18 +18,21 @@ def drop_useless_cols(df, drop_constant=False):
     return new_df
 
 def load_data(kind, filename, data_path, clean=False, **kwargs):
-    filename = check_filename(filename, {'list':'txt', 'json':'json', 'pd':'pkl', 'csv':'csv', 'raw txt':'txt', 'tsv':'tsv'}[kind])
+    filename = check_filename(filename, {'list':'txt', 'json':'json', 'pd':'pkl', 'csv':'csv', 'raw txt':'txt', 'tsv':'tsv', 'pkl':'pkl'}[kind])
     if kind in ['list', 'json']:
         with open(data_path+filename, 'r') as fin:
             return json.load(fin) if kind == 'json' else [line.strip() for line in fin.readlines()]
     elif kind == 'pd':
         return pd.read_pickle(data_path+filename)
     elif kind in ['csv', 'raw txt', 'tsv']:
-        loaded = pd.read_csv(data_path+filename, sep=',' if kind == 'csv' else '\t', na_values=['[Not Available]','[NOT AVAILABLE]','[Not Applicable]','Not Available','NOT AVAILABLE','nan','none','[Unknown]','Not reported','Not Reported','not reported','[Not Evaluated]','[Discrepancy]'], **kwargs)
+        loaded = pd.read_csv(data_path+filename, sep=',' if kind == 'csv' else '\t', na_values=['[Not Available]','[NOT AVAILABLE]','[Not Applicable]','Not Available','NOT AVAILABLE','nan','none','[Unknown]','Not reported','Not Reported','not reported','[Not Evaluated]','[Discrepancy]',"'--"], **kwargs)
         return drop_useless_cols(loaded) if clean else loaded
+    elif kind == 'pkl':
+        with open(data_path+filename, 'rb') as fin:
+            return pickle.load(fin)
 
 def write_file(kind, filename, data, data_path):
-    filename = check_filename(filename, {'list':'txt', 'json':'json', 'pd':'pkl', 'csv':'csv'}[kind])
+    filename = check_filename(filename, {'list':'txt', 'json':'json', 'pd':'pkl', 'csv':'csv', 'pkl': 'pkl'}[kind])
     if kind == 'list':
         with open(data_path+filename, 'w') as fout: fout.writelines('\n'.join(data))
     elif kind == 'json':
@@ -39,6 +41,8 @@ def write_file(kind, filename, data, data_path):
         data.to_pickle(data_path+filename)
     elif kind == 'csv': 
         data.to_csv(data_path+filename)
+    elif kind == 'pkl':
+        with open(data_path+filename, 'wb') as fout: pickle.dump(data, fout)
 
 def get_hgnc26():
     hgnc = load_data('json', 'HGNC_dicts.json', data_path='/gpfs/data/dgamsiz/jpatrico/HGNC2026/')

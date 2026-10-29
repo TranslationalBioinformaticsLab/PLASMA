@@ -1,0 +1,38 @@
+,Feature,All,Early,Late/Never
+0,N (patients),150,53,97
+1,Sex = Female,78 (52),23 (43),55 (57)
+2,Sex = Male,72 (48),30 (57),42 (43)
+3,Pathologic stage = IA,37 (25),4 (8),33 (34)
+4,Pathologic stage = IB,39 (26),8 (15),31 (32)
+5,Pathologic stage = IIA,21 (14),9 (17),12 (12)
+6,Pathologic stage = IIB,18 (12),8 (15),10 (10)
+7,Pathologic stage = IIIA,35 (23),24 (45),11 (11)
+8,Pathologic N = 0.0,106 (71),24 (45),82 (85)
+9,Pathologic N = 1.0,16 (11),9 (17),7 (7)
+10,Pathologic N = 2.0,28 (19),20 (38),8 (8)
+11,Pathologic T = T1,43 (29),9 (17),34 (35)
+12,Pathologic T = T2,81 (54),31 (58),50 (52)
+13,Pathologic T = T3,24 (16),12 (23),12 (12)
+14,Pathologic T = T4,2 (1),1 (2),1 (1)
+15,Smoking status = current,60 (40),17 (32),43 (44)
+16,Smoking status = former,73 (49),33 (62),40 (41)
+17,Smoking status = never,17 (11),3 (6),14 (14)
+18,Age (years) — median,68.00,71.00,66.00
+19,Age (years) — IQR,60.00-74.00,64.00-76.00,60.00-72.00
+20,Ethnicity = Black,1 (1),0 (0),1 (1)
+21,Ethnicity = Caribbean,1 (1),1 (2),0 (0)
+22,Ethnicity = Indian,3 (2),1 (2),2 (2)
+23,Ethnicity = Middle eastern,1 (1),1 (2),0 (0)
+24,Ethnicity = South American,1 (1),0 (0),1 (1)
+25,Ethnicity = White and Asian,1 (1),0 (0),1 (1)
+26,Ethnicity = White and Black,1 (1),0 (0),1 (1)
+27,Ethnicity = White- British,128 (85),44 (83),84 (87)
+28,Ethnicity = White- Irish,7 (5),2 (4),5 (5)
+29,Ethnicity = White- Other,1 (1),1 (2),0 (0)
+30,Ethnicity = White-European,5 (3),3 (6),2 (2)
+31,"Time to recurrence (days), recurred only — n",63,53,10
+32,"Time to recurrence (days), recurred only — median",325.00,306.00,1029.50
+33,"Time to recurrence (days), recurred only — IQR",204.50-568.50,197.00-476.00,921.50-1398.50
+34,"Follow-up (days), never recurred — n",87,0,87
+35,"Follow-up (days), never recurred — median",1751.00,—,1751.00
+36,"Follow-up (days), never recurred — IQR",1391.50-1851.00,—,1391.50-1851.00
