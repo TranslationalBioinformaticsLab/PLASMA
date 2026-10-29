@@ -237,7 +237,7 @@ def _wilson(k, n, z=1.96):
     return max(0.0, c - h), min(1.0, c + h)
 
 def plot_observed_association(cohorts, order=None, labels=None, colors=None, fsize=(4.2, 3.0), dpi=600, ylabel='Two-year recurrence', title=None, annotate_n=True, tests=None,
-                              bracket_gap=0.045, bracket_step=0.085, ymax=None, out=None, show=False, ax=None):
+                              bracket_gap=0.045, bracket_step=0.085, ymax=None, headroom=0.10, legend_kw=None, out=None, show=False, ax=None):
     """ Observed event rate per category, per cohort, with Wilson intervals """
     cats = list(order) if order else list(dict.fromkeys(next(iter(cohorts.values()))[0].dropna()))
     names = list(cohorts)
@@ -271,13 +271,15 @@ def plot_observed_association(cohorts, order=None, labels=None, colors=None, fsi
                     ax.text(xx, 0.015, f'$n$={n}', ha='center', va='bottom', fontsize=7, color='white')
         for c, xx, r, h in zip(cats, pos, rates, his):
             bar_pos[(nm, c)] = xx
-            bar_top[(nm, c)] = (r + h) if np.isfinite(r) else 0.0      # top of the error bar, for bracket placement
+            bar_top[(nm, c)] = (r + h) if np.isfinite(r) else 0.0      # top of the error bar
     drawn_top = None
     for i, (nm, (ca, cb, p)) in enumerate(sorted((tests or {}).items())):
         if (nm, ca) not in bar_pos or (nm, cb) not in bar_pos:
             continue
         xa, xb = bar_pos[(nm, ca)], bar_pos[(nm, cb)]
-        yb = max(bar_top[(nm, ca)], bar_top[(nm, cb)]) + bracket_gap
+        lo_x, hi_x = min(xa, xb) - 1e-9, max(xa, xb) + 1e-9
+        # clear every bar the bracket passes over, not just its two endpoints
+        yb = max(t for key, t in bar_top.items() if lo_x <= bar_pos[key] <= hi_x) + bracket_gap
         if drawn_top is not None:
             yb = max(yb, drawn_top + bracket_step)
         ax.plot([xa, xa, xb, xb], [yb - 0.013, yb, yb, yb - 0.013], lw=0.9, color='#111827', clip_on=False)
@@ -287,13 +289,15 @@ def plot_observed_association(cohorts, order=None, labels=None, colors=None, fsi
     ax.set_xticks(x + width * (len(names) - 1) / 2)
     ax.set_xticklabels([(labels or {}).get(c, str(c).capitalize()) for c in cats], fontsize=9)
     ax.set_ylabel(ylabel, fontsize=9, fontweight=540, labelpad=5)
-    # Headroom for however many brackets were stacked, plus room for their labels
-    ax.set_ylim(0, ymax if ymax else ((drawn_top + 0.10) if tests and drawn_top else 0.75))
+    highest = drawn_top if drawn_top is not None else max(bar_top.values(), default=0.0)
+    ax.set_ylim(0, ymax if ymax else highest + headroom)
     ax.yaxis.set_major_formatter(lambda v, _: f'{v:.0%}')
     ax.tick_params(axis='y', labelsize=8)
     if title:
         ax.set_title(title, fontsize=9, fontweight='bold')
-    ax.legend(fontsize=7.5, frameon=True, framealpha=.85, edgecolor='0.7', loc='upper right', borderpad=.35)
+    lkw = dict(fontsize=7.5, frameon=True, framealpha=.85, edgecolor='0.7', loc='upper right', borderpad=.35)
+    lkw.update(legend_kw or {})
+    ax.legend(**lkw)
     for sp in ax.spines.values():
         sp.set_color('black')
     if out and created:
@@ -316,7 +320,8 @@ def pool_log_or(estimates):
     return float(np.exp(b)), float(np.exp(b - 1.96 * se)), float(np.exp(b + 1.96 * se)), \
         float(2 * norm.sf(abs(b / se)))
 
-def plot_or_forest(estimates, fsize=(4.2, 2.0), dpi=600, xlabel='Odds ratio (current vs former smoker)', title=None, legend=True, legend_loc='lower right', out=None, show=False, ax=None, note=None):
+def plot_or_forest(estimates, fsize=(4.2, 2.0), dpi=600, xlabel='Odds ratio (current vs. former smoker)', title=None, legend=True, legend_kw=None, out=None, show=False,
+                   ax=None, note=None, xlim=None, xticks=None, legend_labels=None):
     """ Forest plot of odds ratios on a log axis, one row per cohort plus the pooled estimate """
     created = ax is None
     if created:
@@ -337,10 +342,16 @@ def plot_or_forest(estimates, fsize=(4.2, 2.0), dpi=600, xlabel='Odds ratio (cur
     ax.set_yticks(y)
     ax.set_yticklabels(labs, fontsize=9)
     ax.set_xscale('log')
-    ax.set_xticks([0.2, 0.5, 1.0, 2.0])
-    ax.set_xticklabels(['0.2', '0.5', '1.0', '2.0'], fontsize=8)
+    if xlim is None:
+        lo_all = min(min(e[1] for e in estimates.values()), 1.0)
+        hi_all = max(max(e[2] for e in estimates.values()), 1.0)
+        xlim = (lo_all / 1.15, hi_all * 1.15)
+    if xticks is None:
+        xticks = [t for t in (0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0) if xlim[0] <= t <= xlim[1]]
+    ax.set_xticks(xticks)
+    ax.set_xticklabels([f'{t:.1f}' for t in xticks], fontsize=8)
     ax.minorticks_off()
-    ax.set_xlim(0.17, 2.2)
+    ax.set_xlim(*xlim)
     ax.set_xlabel(xlabel, fontsize=9, fontweight=540)
     if note:
         ax.annotate(note, xy=(.53, -0.28), xycoords='axes fraction', fontsize=7, color='#52514e', ha='left', va='top', annotation_clip=False)
@@ -358,9 +369,12 @@ def plot_or_forest(estimates, fsize=(4.2, 2.0), dpi=600, xlabel='Odds ratio (cur
             if k == 'pooled, adjusted':  return any(pi and ai for pi, ai in zip(p, a))
             return False
         present = [t for t in kinds if _has(t[0])]
-        handles = [_L2D([], [], color=c, marker=m, lw=1.5, label=lab, markerfacecolor=(f or c)) for lab, c, m, s, f in present] # , markeredgewidth=1.5
+        rename = dict(legend_labels or {})
+        handles = [_L2D([], [], color=c, marker=m, lw=1.5, label=rename.get(lab, lab), markerfacecolor=(f or c)) for lab, c, m, s, f in present]
         if handles:
-            ax.legend(handles=handles, fontsize=7, loc=legend_loc, frameon=True, framealpha=.85, edgecolor='0.7', borderpad=.35, markerscale=0.7, labelspacing=.35) # handlelength=1.4, labelspacing=.25, borderpad=.35
+            lkw = dict(fontsize=7, frameon=True, framealpha=.85, edgecolor='0.7', borderpad=.35, markerscale=0.7, labelspacing=.35)
+            lkw.update(legend_kw or {})
+            ax.legend(handles=handles, **lkw)
     for sp in ax.spines.values():
         sp.set_color('black')
     if out and created:

@@ -83,6 +83,22 @@ def save_explanation(ex, out_dir):
     with open(f'{out_dir}/meta.json', 'w') as f:
         json.dump(meta, f, indent=2)
 
+def load_explanation(out_dir):
+    """ Inverse of save_explanation """
+    def _read(name):
+        # round_trip parsing restores the floats to_csv wrote exactly, rather than to the last-digit approximation
+        return pd.read_csv(os.path.join(out_dir, name), index_col=0, float_precision='round_trip')
+    vals, data, disp = _read('shap_values.csv'), _read('data_scaled.csv'), _read('data_display.csv')
+    with open(os.path.join(out_dir, 'meta.json')) as f:
+        meta = json.load(f)
+    names = list(meta['names'])
+    if list(vals.columns) != names or list(data.columns) != names:
+        raise ValueError(f'{out_dir}: column order in the CSVs does not match meta.json names')
+    if not vals.index.equals(data.index):
+        raise ValueError(f'{out_dir}: shap_values.csv and data_scaled.csv cover different patients or orders')
+    return {'values': vals.to_numpy(dtype=float), 'data': data, 'display': disp.reindex(index=data.index, columns=data.columns), 'names': names, 'base': float(meta['base']),
+            'blocks': {k: tuple(v) for k, v in meta['blocks'].items()}, 'explain_on': meta['explain_on'], 'background': meta['background']}
+
 def top_features(ex, n=20, block=None):
     """ Features ranked by mean |SHAP|, with the direction of their association. 'corr_with_shap' is the correlation between a feature's value and its attribution: positive means higher 
     values push the prediction toward recurrence (equivalent to how colors are interpreted in the beeswarm summary plot) """
