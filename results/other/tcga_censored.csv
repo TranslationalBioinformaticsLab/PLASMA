@@ -1,0 +1,31 @@
+,Feature,Censored,Determinate
+0,N (patients),144,248
+1,Sex = FEMALE,77 (53),136 (55)
+2,Sex = MALE,67 (47),112 (45)
+3,Pathologic stage = IA,55 (38),62 (25)
+4,Pathologic stage = IB,43 (30),70 (28)
+5,Pathologic stage = IIA,14 (10),30 (12)
+6,Pathologic stage = IIB,13 (9),46 (19)
+7,Pathologic stage = IIIA,19 (13),40 (16)
+8,Pathologic N = N0,110 (76),156 (63)
+9,Pathologic N = N1,17 (12),57 (23)
+10,Pathologic N = N2,17 (12),35 (14)
+11,Pathologic T = T1,61 (42),77 (31)
+12,Pathologic T = T2,67 (47),146 (59)
+13,Pathologic T = T3,15 (10),24 (10)
+14,Pathologic T = T4,1 (1),1 (0)
+15,Smoking status = current,34 (24),62 (25)
+16,Smoking status = former,91 (63),150 (60)
+17,Smoking status = never,19 (13),36 (15)
+18,Age (years) — median,68.00,66.00
+19,Age (years) — IQR,60.00-73.00,59.00-72.00
+20,Race = AMERICAN INDIAN OR ALASKA NATIVE,0 (0),1 (0)
+21,Race = ASIAN,1 (1),5 (2)
+22,Race = BLACK OR AFRICAN AMERICAN,15 (10),29 (12)
+23,Race = WHITE,116 (81),190 (77)
+24,Race = Missing,12 (8),23 (9)
+25,Ethnicity = HISPANIC OR LATINO,2 (1),4 (2)
+26,Ethnicity = NOT HISPANIC OR LATINO,121 (84),184 (74)
+27,Ethnicity = Missing,21 (15),60 (24)
+28,Follow-up at censoring (days) — median,476.50,—
+29,Follow-up at censoring (days) — IQR,291.50-597.00,—

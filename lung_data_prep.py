@@ -1076,3 +1076,48 @@ class Table1:
     def get_tables(self, tcga_fn='', trcr_fn=''):
         self.tcga_table1 = self.table1('tcga', tcga_fn)
         self.trcr_table1 = self.table1('trcr', trcr_fn)
+
+class CensoredTable(Table1):
+    """ Supplementary table for the patients without a determinate two-year label (censored before the window), who enter training only through the discrete-time survival loss """
+    def __init__(self, tcga, tracerx=None, compare=True, **kwargs):
+        super().__init__(tcga, tracerx, **kwargs)
+        self.compare = compare
+
+    def table(self, dataset='tcga', fn=''):
+        assert dataset in ('tcga', 'trcr'), "Dataset must be 'tcga' or 'trcr'"
+        df = (self.tcga if dataset == 'tcga' else self.trcr).clin_for_table1.copy()
+        if self.clean_up:
+            df = self.clean(df, dataset)
+        cens = df.index[df['label_early'].isna()]
+        det = df.index[df['label_early'].notna()]
+        self.n_censored[dataset] = len(cens)
+        if len(cens) == 0:
+            print(f'[censored table:{dataset}] no censored patients in clin_for_table1')
+            return None
+        if TTR_COL in df.columns: # censored means no recurrence observed before follow-up ended
+            assert df.loc[cens, TTR_COL].isna().all(), 'censored patients with a recorded time to recurrence'
+        ref = det if self.compare else df.index[[]]
+        empty = df.index[[]]
+        wanted = self.base_cols + list(self.extra_cols.get(dataset, []))
+        missing = [c for c in wanted if c not in df.columns]
+        if missing:
+            self.skipped.setdefault(dataset, []).extend(missing)
+            print(f"[censored table:{dataset}] not in clin_for_table1, skipped: {missing}")
+        cols = [c for c in wanted if c in df.columns]
+        # the inherited row builders take three groups (all/early/late); pass censored, reference and an empty third and keep the first three fields
+        rows = [("N (patients)", len(cens), len(ref))]
+        for col in cols:
+            label, s = self.labels.get(col, col), df[col]
+            built = self._cont_rows(label, s, cens, ref, empty) if self.is_continuous(s) else self._cat_rows(label, s, cens, ref, empty)
+            rows += [r[:3] for r in built]
+        fu_cols = self.fu_col.get(dataset) or []
+        fu_cols = [fu_cols] if isinstance(fu_cols, str) else list(fu_cols)
+        have = [c for c in fu_cols if c in df.columns]
+        if have: # follow-up at censoring; not applicable to the determinate column, whose follow-up is reported in Table 1
+            fu = df[have].apply(pd.to_numeric, errors='coerce').max(axis=1)
+            rows += [(r[0], r[1], '—') for r in self._cont_rows('Follow-up at censoring (days)', fu, cens, empty, empty)]
+        columns = ['Feature', 'Censored', 'Determinate'] if self.compare else ['Feature', 'Censored']
+        out = pd.DataFrame([r[:len(columns)] for r in rows], columns=columns, dtype=object)
+        if fn:
+            write_file('csv', fn, out, 'results/')
+        return out
